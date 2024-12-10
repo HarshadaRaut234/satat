@@ -1,5 +1,5 @@
 # AV8 SATAT
-AV8 satat (meaning forever; stands for SATallite Analysis Toolkit) is an open source project for for satellite related analysis.
+AV8 satat (meaning forever; stands for SATallite Analysis Toolkit) is an open source projectfor satellite related analysis.
 It is meant for all kind of analysis including following
 - Orbit Visualisation
 - Attitude visualisation (3D)
