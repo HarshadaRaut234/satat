@@ -1,0 +1,11 @@
+Package  Version
+-------- ---------
+asgiref  3.8.1
+certifi  2024.8.30
+Django   5.1.4
+jplephem 2.22
+numpy    2.2.0
+pip      24.2
+sgp4     2.23
+skyfield 1.49
+sqlparse 0.5.2
