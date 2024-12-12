@@ -12,7 +12,7 @@ const routes = [
     path: '/map',
     name: 'MapView',
     component: MapView
-  }
+  },
   
 ]
 

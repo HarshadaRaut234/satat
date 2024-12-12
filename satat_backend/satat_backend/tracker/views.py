@@ -2,6 +2,8 @@ import json
 from django.http import JsonResponse, HttpResponse
 from skyfield.api import load, EarthSatellite
 from datetime import datetime, timedelta
+import time
+
 
 def get_satellite_position(request, satellite_id):
     # Taking Inspire-Sat-1 for example will update to PiLOT-G2 in future and then geneic
@@ -14,24 +16,19 @@ def get_satellite_position(request, satellite_id):
         "line2": "2 51657  97.5137   3.0182 0004944 268.9071  91.1605 15.34736037156290"
     }
 
-    positions = []
-    for i in range(0, 24):
-        ts = load.timescale()
-        satellite = EarthSatellite(satellite_tle['line1'], satellite_tle['line2'], satellite_tle['name'], ts)
-        current_time = datetime.utcnow() + timedelta(hours=i)
-        t = ts.utc(tuple(current_time.timetuple())[:6])
-        geocentric = satellite.at(t)
+    coordinates = {
+        'ground_station': {
+            'lat': 8.62572,
+            'long': 77.03402
+        },
+        'satellite':{
+            'lat': 0.0,
+            'long': 0.0
+        }
+    }
 
-        r = geocentric.position.au
+    return JsonResponse(coordinates)
 
-        lat = r[0][0] / 1000.0
-        lon = r[1][0] / 1000.0
-        alt = r[2][0] / 1000.0
-        positions.append({
-            'time': current_time.isoformat(),
-            'lat': lat,
-            'lon': lon,
-            'alt': alt
-        })
 
-    return HttpResponse(str(positions)+'    '+str(current_time.timetuple()))
+def get_satellite_position_series(requent, satellite):
+    pass
