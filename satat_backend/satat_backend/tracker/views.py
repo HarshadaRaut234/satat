@@ -59,3 +59,9 @@ def get_satellite_position(request, satellite_id):
 
     except requests.exceptions.RequestException as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+def get_groundstation_position(request):
+    return JsonResponse({
+        'lat': 8.6265,
+        'long': 77.0338
+    })

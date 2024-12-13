@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/components/HomeView.vue'
 import MapView from '@/components/MapView.vue'
+import DecodeView from '@/components/DecodeView.vue'
 
 const routes = [
     {
@@ -13,6 +14,11 @@ const routes = [
     name: 'MapView',
     component: MapView
   },
+  {
+    path: '/decode',
+    name: 'DecodeView',
+    component: DecodeView
+  }
   
 ]
 

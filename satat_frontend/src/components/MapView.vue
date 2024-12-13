@@ -35,18 +35,26 @@ export default {
   },
   beforeCreate(){
     axios
-        .get('/track/satellite/1/positions')
+        .get('/track/groundstation/')
         .then(response => {
-            const gs = response.data.ground_station;
-            const sat = response.data.satellite;
+            const gs = response.data;
             this.groundstation = latLng(gs.lat, gs.long);
             this.center = latLng(gs.lat, gs.long);
             this.currentCenter = latLng(gs.lat, gs.long);
+        })
+        .catch(error => {
+            console.log(error);
+        });
+    axios
+        .get('/track/satellite/51657/positions/')
+        .then(response => {
+            const sat = response.data.satellite;
             this.satellite = latLng(sat.lat, sat.long)
         })
         .catch(error => {
             console.log(error);
-        })
+        });
+
   },
   data() {
     return {
