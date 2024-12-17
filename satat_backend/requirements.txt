@@ -11,3 +11,4 @@ sgp4==2.23
 skyfield==1.49
 sqlparse==0.5.2
 urllib3==2.2.3
+pandas==2.2.3
