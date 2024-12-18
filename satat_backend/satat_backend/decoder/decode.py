@@ -1,18 +1,10 @@
-# Data decoder for poem packages by Abhishek Verma
-# imports
 import pandas as pd
 import numpy as np
 
-# variables
 valid_lengths = [136, 74, 104, 65, 52, 126]
 valid_apids = [1, 2, 3, 4, 5, 6]
 packet_names = {1:'hk_pkt', 2:'Gmc', 3:'Comms', 4:'thermistor_pkt', 5:'init', 6:'log'}
 filename = r'e:\\PiLOT_G2_Software\\grace_data_decoder\\Pilot-PCOC-Checks.tm1PILOT2.tds.out'
-#r'E:/Support/SEC1.txt_01.txt'
-#
-#r'E:/Support/SEC1.txt_01.txt'
-
-#r'C:/Abhishek/pilot2_telemetry_decoder/pilot_img1_dpu.txt'
 
    
 # definitions
@@ -117,7 +109,7 @@ def load_data(filename):
     data_df = pd.Series(byte_data).iloc[::2].reset_index(drop=True)
     return data_df
 
-def generate_report(data_df):
+def summarize_data(data_df):
     index0x08 = data_df.where(data_df==0x08).dropna().index
     #print(index0x08)
     index0x08 = index0x08[:-1] #to elimate last packet which maybe incompleted
@@ -133,15 +125,15 @@ def generate_report(data_df):
     report_df['calculated_fletcher'] = report_df.apply(lambda row: fletcher(data_df[row['packet_start']:row['packet_start']+row['length']]), axis=1)
     report_df['is_fletcher_correct'] = report_df.original_fletcher == report_df.calculated_fletcher #checking flether here
     report_df = report_df.reset_index(drop=True) #resetting index of fianl_df to 0 to n
-    #final data_df is ready to export to files now
+    # final data_df is ready to export to files now
     # now we have processed and computed data in report_df and all raw data in data_df
     # both are equally important a report_df only have indexes of packets and lengths of those packets meanwhile data_df have the real data of  the whole file in bytes. 
     return report_df
 
 def main():
-    data = load_data(filename)
-    print(data)
-    report = generate_report(data)
-    decoded_values = packetiser(data, report)
+    pass
+    # data = load_data(filename)
+    # report = generate_report(data) #changed to summarize_data as no need to export report here
+    # decoded_values = packetiser(data, report)
 
-    return decoded_values
+    # return decoded_values
