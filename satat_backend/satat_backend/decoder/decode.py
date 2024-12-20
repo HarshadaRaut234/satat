@@ -52,7 +52,7 @@ def decode_packet_data(packet, fields):
 
         if isinstance(field_info, str):
             # Process array fields (byte- or bit-based)
-            parts = field_info.split('.')
+            parts = field_info.split('|')
             
             if len(parts) == 2:
                 array_size, bytes_per_entry = map(int, parts)
@@ -178,14 +178,17 @@ def prc(x):
         res += values[i] * pow(x, i)
     return res
 
+def time(shcoarse, shfine):
+    return (0xFFFFFFFFFFFFFFFF - ((shcoarse << 32) | shfine)) * 0.00000002
+
 # a string key value signifies that hte the output is an array with the format [size].[bytes per field]
 # for fields with multiple decimal points, the format is [size].[buffer].[bits per field]
 def decode_packets(packet, packet_type):
-    init_fields = {'Image_ID': 1, 'status': '8.0.1', 'ADF_Init': 1, 'config': '8.0.1', 'GPS_Time_State_Vector': '32.1', 'Fletcher_Code': 2}
-    gmc_fields = {'Image_ID': 1, 'GMC_Radiation_Counts': 4, 'GMC_Read_Free_Register': 4, 'GMC_Payload_Supply_Voltage': 2,'GM_Tube_High_Voltage': 2,'HVDC_IC_Control_Voltage': 2, 'Comparator_Reference_Voltage': 2,'Other_Channel_Of_ADC': '4.2','GMC_sd_dump': 1, 'GPS_Time_State_Vector': '32.1', 'Fletcher_Code': 2}
-    therm_fields = {'GMC_Temperature': 2, 'PIS_Temperature': 2,'CUB_Temperature': 2,'OBC_Temperature': 2,'Sun_Facing_Connector_Temp': 2,'Sun_Facing_Flat_Temp': 2,'Adjacent_Sun_Facing_Window_Temp': 2,'Base_Plate_Temp': 2, 'sd_dump': 1, 'GPS_Time_State_Vector': '32.1', 'Fletcher_Code': 2}
-    comms_fields = {'Image_ID': 1, 'Comms_ADF_CMD_Rx': 1, 'Comms_ADF_CMD_Succ': 1, 'Comms_ADF_CMD_REJECT': 1, 'Comms_ADF_RSSI_CCA': 2, 'Comms_ADF_RSSI': 2, 'Comms_ADF_Preamble_Pattern': 1, 'Comms_ADF_Sync_Word': 4, 'Comms_ADF_Freq': 4, 'Comms_ADF_Read_REG_ADDR': 4, 'Comms_ADF_Read_REG_No_Double_Words': 1, 'Comms_ADF_Data': '8.4', 'Comms_ADF_State': 1, 'sd_dump': 1, 'GPS_Time_State_Vector': '32.1', 'Fletcher_Code': 2}
-    hk_fields = {'Cmd_ADF_Counts': 1, 'Cmd_RS485_Succ_Counts': 1, 'Cmd_RS485_Fail_Counts': 1, 'Image_ID': 1, 'CLK_Rate': 2, 'Command_Loss_Timer': 4, 'Prev_CMD_Receive': 1, 'Latest_CodeWord_RCV': 1, 'Reset_Counts': 1, 'RTM': '16.1', 'Acc_X': 2,'Acc_Y': 2,'Acc_Z': 2, 'Roll_Rate': 2,'Pitch_Rate': 2,'Yaw_Rate': 2, 'IMU_Temp': 2, 'CDH_Voltage': 2,'PIS_Voltage': 2,'Other_Voltages': '3.2', 'CDH_Current': 2,'PIS_Current': 2,'Other_Currents': '3.2', 'HK_Read_Pointer':4, 'HK_Write_Pointer': 4, 'Thermistor_Read_Pointer': 4, 'Thermistor_Write_Pointer': 4, 'Comms_Read_Pointer': 4, 'Comms_Write_Pointer': 4, 'sd_dump': 1, 'GPS_Time_State_Vector': '32.1', 'Fletcher_Code': 2}
+    init_fields = {'Image_ID': 1, 'status': '8|0|1', 'ADF_Init': 1, 'config': '8|0|1', 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
+    gmc_fields = {'Image_ID': 1, 'GMC_Radiation_Counts': 4, 'GMC_Read_Free_Register': 4, 'GMC_Payload_Supply_Voltage': 2,'GM_Tube_High_Voltage': 2,'HVDC_IC_Control_Voltage': 2, 'Comparator_Reference_Voltage': 2,'Other_Channel_Of_ADC': '4|2','GMC_sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
+    therm_fields = {'GMC_Temperature': 2, 'PIS_Temperature': 2,'CUB_Temperature': 2,'OBC_Temperature': 2,'Sun_Facing_Connector_Temp': 2,'Sun_Facing_Flat_Temp': 2,'Adjacent_Sun_Facing_Window_Temp': 2,'Base_Plate_Temp': 2, 'sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
+    comms_fields = {'Image_ID': 1, 'Comms_ADF_CMD_Rx': 1, 'Comms_ADF_CMD_Succ': 1, 'Comms_ADF_CMD_REJECT': 1, 'Comms_ADF_RSSI_CCA': 2, 'Comms_ADF_RSSI': 2, 'Comms_ADF_Preamble_Pattern': 1, 'Comms_ADF_Sync_Word': 4, 'Comms_ADF_Freq': 4, 'Comms_ADF_Read_REG_ADDR': 4, 'Comms_ADF_Read_REG_No_Double_Words': 1, 'Comms_ADF_Data': '8|4', 'Comms_ADF_State': 1, 'sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
+    hk_fields = {'Cmd_ADF_Counts': 1, 'Cmd_RS485_Succ_Counts': 1, 'Cmd_RS485_Fail_Counts': 1, 'Image_ID': 1, 'CLK_Rate': 2, 'Command_Loss_Timer': 4, 'Prev_CMD_Receive': 1, 'Latest_CodeWord_RCV': 1, 'Reset_Counts': 1, 'RTM': '16|1', 'Acc_X': 2,'Acc_Y': 2,'Acc_Z': 2, 'Roll_Rate': 2,'Pitch_Rate': 2,'Yaw_Rate': 2, 'IMU_Temp': 2, 'CDH_Voltage': 2,'PIS_Voltage': 2,'Other_Voltages': '3|2', 'CDH_Current': 2,'PIS_Current': 2,'Other_Currents': '3|2', 'HK_Read_Pointer':4, 'HK_Write_Pointer': 4, 'Thermistor_Read_Pointer': 4, 'Thermistor_Write_Pointer': 4, 'Comms_Read_Pointer': 4, 'Comms_Write_Pointer': 4, 'sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
     log_fields = {'TIMEL_1': 4, 'TIMEH_1': 4, 'TASKID_1': 1, 'TASK_STATUS_1': 2, 'TIMEL_2': 4, 'TIMEH_2': 4, 'TASKID_2': 1, 'TASK_STATUS_2': 2, 'TIMEL_3': 4, 'TIMEH_3': 4, 'TASKID_3': 1, 'TASK_STATUTS_3': 2, 'TIMEL_4': 4, 'TIMEH_4': 4, 'TASKID_4': 1, 'TASK_STATUS_4': 2, 'TIMEL_5': 4, 'TIMEH_5': 4, 'TASKID_5': 1, 'TASK_STATUS_5': 2, 'TIMEL_6': 4, 'TIMEH_6': 4, 'TASKID_6': 1, 'TASK_STATUS_6': 2, 'TIMEL_7': 4, 'TIMEH_7':4, 'TASKID_7': 1, 'TASK_STATUS_7': 2, 'TIMEL_8': 4, 'TIMEH_8': 4, 'TASKID_8': 1, 'TASK_STATUS_8': 2, 'TIMEL_9': 4, 'TIMEH_9': 4, 'TASKID_9': 1, 'TASK_STATUS_9': 2, 'TIMEL_10': 4, 'TIMEH_10': 4, 'TASKID_10': 1, 'TASK_STATUS_10': 2, 'Fletcher_Code': 2}
     decoded_header_fields = decode_header(packet[:14])
     
@@ -232,6 +235,7 @@ def decode_packets(packet, packet_type):
         return None
 
     decoded_fields = decoded_header_fields | decoded_data_fields
+    decoded_fields['Time'] = time(decoded_fields['SHCOARSE'], decoded_fields['SHFINE'])
     return decoded_fields
             
 def packetiser(data_df, report_df):
