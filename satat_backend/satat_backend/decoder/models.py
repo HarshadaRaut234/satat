@@ -139,5 +139,5 @@ class InitPacket(models.Model):
     config = models.CharField(max_length=200)
     GPS_Time_State_Vector = models.CharField(max_length=400)
     Fletcher_Code = models.IntegerField()
-    Time = models.DecimalField(max_digits=20, decimal_places=14)
+    Time = models.DecimalField(max_digits=30, decimal_places=14)
 
