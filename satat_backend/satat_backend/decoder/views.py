@@ -21,26 +21,32 @@ def ccsds_decoder(request):
     summary_df = summarize_data(data_df)
 
     # decoded_values = packetiser(data_df, summary_df)
-    decoded_values_list = []  #Empty list to store decoded values
+    decoded_values_series = pd.Series()  #Empty list to store decoded values
 
-    for i in range(1,len(summary_df)):
+    for i in range(len(summary_df)):
         decoded_values = get_packet_by_index(data_df, summary_df, i)
     
-        decoded_values_list.append(decoded_values)
-    
-    #Iterating over all packets
-    for decoded_values in decoded_values_list:
-        if decoded_values["CCSDSAPID"] == 1:
-            new_hk_packet = HkPacket.objects.create(Filename=file.name, **decoded_values)
-        elif decoded_values["CCSDSAPID"] == 2:
-            new_gmc_packet = GmcPacket.objects.create(Filename=file.name, **decoded_values)
-        elif decoded_values["CCSDSAPID"] == 3:
-            new_comms_packet = CommsPacket.objects.create(Filename=file.name, **decoded_values)
-        elif decoded_values["CCSDSAPID"] == 4:
-            new_temp_packet = TempPacket.objects.create(Filename=file.name, **decoded_values)
-        elif decoded_values["CCSDSAPID"] == 5:
-            new_init_packet = InitPacket.objects.create(Filename=file.name, **decoded_values)
-        else:
-            pass
+        decoded_values_series.loc[i]=decoded_values
+
+    hk_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 1)]
+    gmc_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 2)]
+    comms_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 3)]
+    temp_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 4)]
+    init_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 5)]
+
+    hk_packet_list = [HkPacket(Filename=file.name, **row)for _, row in hk_packet_series.items()]
+    gmc_packet_list = [GmcPacket(Filename=file.name, **row)for _, row in gmc_packet_series.items()]
+    comms_packet_list = [CommsPacket(Filename=file.name, **row)for _, row in comms_packet_series.items()]
+    temp_packet_list = [TempPacket(Filename=file.name, **row)for _, row in temp_packet_series.items()]
+    init_packet_list = [InitPacket(Filename=file.name, **row)for _, row in init_packet_series.items()]
+
+
+    HkPacket.objects.bulk_create(hk_packet_list)
+    GmcPacket.objects.bulk_create(gmc_packet_list)
+    CommsPacket.objects.bulk_create(comms_packet_list)
+    TempPacket.objects.bulk_create(temp_packet_list)
+    InitPacket.objects.bulk_create(init_packet_list)
+
+    decoded_values_list=decoded_values_series.tolist()
 
     return JsonResponse(decoded_values_list, safe=False)
