@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'tracker',
     'decoder',
+    'django_celery_results',
     'homepage'
 ]
 
@@ -146,3 +147,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# settings.py
+
+CELERY_BROKER_URL = 'memory://'  # Use the Django database as the broker
+CELERY_RESULT_BACKEND = 'django-db'  # Store task results in the database
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'

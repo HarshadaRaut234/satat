@@ -3,5 +3,5 @@ from . import views
 
 urlpatterns = [
     path('', views.file_input),
-    path('submit/', views.ccsds_decoder),
+    path('submit/', views.input),
 ]
