@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+from django.http import JsonResponse
+from .decode import *
+from .models import *
+from celery import shared_task
 
 valid_lengths = [136, 74, 104, 65, 52, 126]
 valid_apids = [1, 2, 3, 4, 5, 6]
@@ -183,6 +187,7 @@ def time(shcoarse, shfine):
 
 # a string key value signifies that hte the output is an array with the format [size].[bytes per field]
 # for fields with multiple decimal points, the format is [size].[buffer].[bits per field]
+
 def decode_packets(packet, packet_type):
     init_fields = {'Image_ID': 1, 'status': '8|0|1', 'ADF_Init': 1, 'config': '8|0|1', 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
     gmc_fields = {'Image_ID': 1, 'GMC_Radiation_Counts': 4, 'GMC_Read_Free_Register': 4, 'GMC_Payload_Supply_Voltage': 2,'GM_Tube_High_Voltage': 2,'HVDC_IC_Control_Voltage': 2, 'Comparator_Reference_Voltage': 2,'Other_Channel_Of_ADC': '4|2','GMC_sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
@@ -267,3 +272,41 @@ def summarize_data(data_df):
     # now we have processed and computed data in report_df and all raw data in data_df
     # both are equally important a report_df only have indexes of packets and lengths of those packets meanwhile data_df have the real data of  the whole file in bytes. 
     return report_df
+
+def get_packet_by_index(data_df, summary_df, index):
+    packet = data_df[int(summary_df['packet_start'][index]):int(summary_df['packet_start'][index]+summary_df['length'][index])].astype('uint8')
+    return decode_packets(packet, summary_df['packet_type'][index])
+
+@shared_task
+def ccsds_decoder(file_name, file_data):
+    # Decoding logic
+    print("reading file")
+    byte_data = np.frombuffer(file_data, dtype=np.uint8)
+    data_df = pd.Series(byte_data).iloc[::2].reset_index(drop=True)
+    summary_df = summarize_data(data_df)
+
+    decoded_values_series = pd.Series()  # Empty list to store decoded values
+
+    for i in range(len(summary_df)):
+        decoded_values = get_packet_by_index(data_df, summary_df, i)
+        print("value decoded")
+        decoded_values_series.loc[i] = decoded_values
+
+    hk_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 1)]
+    gmc_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 2)]
+    comms_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 3)]
+    temp_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 4)]
+    init_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 5)]
+
+    hk_packet_list = [HkPacket(Filename=file_name, **row) for _, row in hk_packet_series.items()]
+    gmc_packet_list = [GmcPacket(Filename=file_name, **row) for _, row in gmc_packet_series.items()]
+    comms_packet_list = [CommsPacket(Filename=file_name, **row) for _, row in comms_packet_series.items()]
+    temp_packet_list = [TempPacket(Filename=file_name, **row) for _, row in temp_packet_series.items()]
+    init_packet_list = [InitPacket(Filename=file_name, **row) for _, row in init_packet_series.items()]
+
+    HkPacket.objects.bulk_create(hk_packet_list)
+    GmcPacket.objects.bulk_create(gmc_packet_list)
+    CommsPacket.objects.bulk_create(comms_packet_list)
+    TempPacket.objects.bulk_create(temp_packet_list)
+    InitPacket.objects.bulk_create(init_packet_list)
+    print("value stored in database")

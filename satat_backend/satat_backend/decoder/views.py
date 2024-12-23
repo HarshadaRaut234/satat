@@ -2,9 +2,21 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from .decode import *
 from .models import *
+from .decode import *  # Import the Celery task
 
 def file_input(request):
     return render(request, 'input_file.html')
+
+def input(request):
+    if request.method == 'POST' and request.FILES.get('binary_input_file'):
+        file = request.FILES['binary_input_file']
+        file_data = file.read()
+        file_name = file.name
+        # Call the Celery task with the file name and data
+        print("file input taken")
+        ccsds_decoder(file_name, file_data)
+        return JsonResponse({"message": "Task started"}, status=200)
+    return JsonResponse({"error": "No file provided"}, status=400)
 
 def get_packet_by_index(data_df, summary_df, index):
     packet = data_df[int(summary_df['packet_start'][index]):int(summary_df['packet_start'][index]+summary_df['length'][index])].astype('uint8')
