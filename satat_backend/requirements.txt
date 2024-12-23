@@ -12,3 +12,5 @@ skyfield==1.49
 sqlparse==0.5.2
 urllib3==2.2.3
 pandas==2.2.3
+celery==5.4.0
+django_celery_results==2.5.1
