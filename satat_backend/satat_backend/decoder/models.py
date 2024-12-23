@@ -58,6 +58,7 @@ class GmcPacket(models.Model):
     SHFINE = models.BigIntegerField()
     Image_ID = models.IntegerField()
     GMC_Radiation_Counts = models.IntegerField()
+    GMC_Radiation_Counts_Differential = models.IntegerField(null=False)
     GMC_Read_Free_Register = models.IntegerField()
     GMC_Payload_Supply_Voltage =  models.DecimalField(max_digits=20, decimal_places=14)
     GM_Tube_High_Voltage =  models.DecimalField(max_digits=20, decimal_places=14)

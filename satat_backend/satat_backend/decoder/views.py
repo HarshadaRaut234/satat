@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from .decode import *
 from .models import *
@@ -9,6 +9,13 @@ def file_input(request):
 def get_packet_by_index(data_df, summary_df, index):
     packet = data_df[int(summary_df['packet_start'][index]):int(summary_df['packet_start'][index]+summary_df['length'][index])].astype('uint8')
     return decode_packets(packet, summary_df['packet_type'][index])
+
+def differential(series):
+    prev = series.iloc[0]['GMC_Radiation_Counts']
+    for i in series:
+        i['GMC_Radiation_Counts_Differential'] = i['GMC_Radiation_Counts'] - prev
+        prev = i['GMC_Radiation_Counts']
+    return series
 
 def ccsds_decoder(request):
     # decoded_value = main()
@@ -30,6 +37,7 @@ def ccsds_decoder(request):
 
     hk_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 1)]
     gmc_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 2)]
+    gmc_packet_series = differential(gmc_packet_series)
     comms_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 3)]
     temp_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 4)]
     init_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 5)]
@@ -49,4 +57,5 @@ def ccsds_decoder(request):
 
     decoded_values_list=decoded_values_series.tolist()
 
-    return JsonResponse(decoded_values_list, safe=False)
+    # return JsonResponse(gmc_packet_series.tolist(), safe=False)
+    return redirect('http://localhost:3000/goto/TMXKr9IHR?orgId=1')
