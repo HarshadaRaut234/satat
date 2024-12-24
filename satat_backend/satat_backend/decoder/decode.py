@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
-from django.http import JsonResponse
 from .decode import *
 from .models import *
 from celery import shared_task
-from django.shortcuts import render, redirect
+from django.core.cache import cache
 
 valid_lengths = [136, 74, 104, 65, 52, 126]
 valid_apids = [1, 2, 3, 4, 5, 6]
@@ -183,13 +182,13 @@ def prc(x):
         res += values[i] * pow(x, i)
     return res
 
-def time(shcoarse, shfine):
-    return (0xFFFFFFFFFFFFFFFF - ((shcoarse << 32) | shfine)) * 0.00000002
+def time(shcoarse, shfine, start_time):
+    return (start_time + (0xFFFFFFFFFFFFFFFF - ((shcoarse << 32) | shfine)) * 0.00000002)
 
 # a string key value signifies that hte the output is an array with the format [size].[bytes per field]
 # for fields with multiple decimal points, the format is [size].[buffer].[bits per field]
 
-def decode_packets(packet, packet_type):
+def decode_packets(packet, packet_type, start_time):
     init_fields = {'Image_ID': 1, 'status': '8|0|1', 'ADF_Init': 1, 'config': '8|0|1', 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
     gmc_fields = {'Image_ID': 1, 'GMC_Radiation_Counts': 4, 'GMC_Read_Free_Register': 4, 'GMC_Payload_Supply_Voltage': 2,'GM_Tube_High_Voltage': 2,'HVDC_IC_Control_Voltage': 2, 'Comparator_Reference_Voltage': 2,'Other_Channel_Of_ADC': '4|2','GMC_sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
     therm_fields = {'GMC_Temperature': 2, 'PIS_Temperature': 2,'CUB_Temperature': 2,'OBC_Temperature': 2,'Sun_Facing_Connector_Temp': 2,'Sun_Facing_Flat_Temp': 2,'Adjacent_Sun_Facing_Window_Temp': 2,'Base_Plate_Temp': 2, 'sd_dump': 1, 'GPS_Time_State_Vector': '32|1', 'Fletcher_Code': 2}
@@ -241,7 +240,7 @@ def decode_packets(packet, packet_type):
         return None
 
     decoded_fields = decoded_header_fields | decoded_data_fields
-    decoded_fields['Time'] = time(decoded_fields['SHCOARSE'], decoded_fields['SHFINE'])
+    decoded_fields['Time'] = time(decoded_fields['SHCOARSE'], decoded_fields['SHFINE'], start_time)
     return decoded_fields
             
 def packetiser(data_df, report_df):
@@ -274,9 +273,9 @@ def summarize_data(data_df):
     # both are equally important a report_df only have indexes of packets and lengths of those packets meanwhile data_df have the real data of  the whole file in bytes. 
     return report_df
 
-def get_packet_by_index(data_df, summary_df, index):
+def get_packet_by_index(data_df, summary_df, index, time):
     packet = data_df[int(summary_df['packet_start'][index]):int(summary_df['packet_start'][index]+summary_df['length'][index])].astype('uint8')
-    return decode_packets(packet, summary_df['packet_type'][index])
+    return decode_packets(packet, summary_df['packet_type'][index], time)
 
 def differential(series):
     prev = series.iloc[0]['GMC_Radiation_Counts']
@@ -286,24 +285,31 @@ def differential(series):
     return series
 
 @shared_task
-def ccsds_decoder(file_name, file_data):
-    # decoded_value = main()
-
-    # file = request.FILES['binary_input_file']
-    # data = file.read()
+def ccsds_decoder(file, task_id, time):
+    file_data = file.read()
+    file_name = file.name
+    print("File input taken")
+    
+    # Convert file data into appropriate format
     byte_data = np.frombuffer(file_data, dtype=np.uint8)
     data_df = pd.Series(byte_data).iloc[::2].reset_index(drop=True)
-
     summary_df = summarize_data(data_df)
 
-    # decoded_values = packetiser(data_df, summary_df)
-    decoded_values_series = pd.Series()  #Empty list to store decoded values
-
-    for i in range(len(summary_df)):
-        decoded_values = get_packet_by_index(data_df, summary_df, i)
+    # Initialize an empty series for decoded values
+    decoded_values_series = pd.Series()  # Empty series to store decoded values
     
-        decoded_values_series.loc[i]=decoded_values
+    total_packets = len(summary_df)  # Total number of packets to process
 
+    # Process each packet and update progress
+    for i in range(total_packets):
+        decoded_values = get_packet_by_index(data_df, summary_df, i, time)
+        decoded_values_series.loc[i] = decoded_values
+        
+        if (i + 1) % 10 == 0 or i + 1 == total_packets:
+            progress = int(((i + 1) / total_packets) * 100)
+            cache.set(f"progress_{task_id}", progress)
+
+    # Process specific packets based on CCSDSAPID
     hk_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 1)]
     gmc_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 2)]
     gmc_packet_series = differential(gmc_packet_series)
@@ -311,17 +317,22 @@ def ccsds_decoder(file_name, file_data):
     temp_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 4)]
     init_packet_series = decoded_values_series[decoded_values_series.apply(lambda x: x["CCSDSAPID"] == 5)]
 
+    # Convert processed packets into model objects
     hk_packet_list = [HkPacket(Filename=file_name, **row) for _, row in hk_packet_series.items()]
     gmc_packet_list = [GmcPacket(Filename=file_name, **row) for _, row in gmc_packet_series.items()]
     comms_packet_list = [CommsPacket(Filename=file_name, **row) for _, row in comms_packet_series.items()]
     temp_packet_list = [TempPacket(Filename=file_name, **row) for _, row in temp_packet_series.items()]
     init_packet_list = [InitPacket(Filename=file_name, **row) for _, row in init_packet_series.items()]
 
-
+    # Save packets in bulk to the database
     HkPacket.objects.bulk_create(hk_packet_list)
     GmcPacket.objects.bulk_create(gmc_packet_list)
     CommsPacket.objects.bulk_create(comms_packet_list)
     TempPacket.objects.bulk_create(temp_packet_list)
     InitPacket.objects.bulk_create(init_packet_list)
+
+    # Finalize progress
+    cache.set(f"progress_{task_id}", 100)
+
 
     
