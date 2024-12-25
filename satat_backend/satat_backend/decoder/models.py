@@ -43,7 +43,7 @@ class HkPacket(models.Model):
     sd_dump = models.IntegerField()
     GPS_Time_State_Vector = models.CharField(max_length=400)
     Fletcher_Code = models.IntegerField()
-    Time = models.DecimalField(max_digits=20, decimal_places=14)
+    Time = models.DecimalField(max_digits=40, decimal_places=14)
 
 class GmcPacket(models.Model):
     Filename = models.CharField(max_length=100)
@@ -68,7 +68,7 @@ class GmcPacket(models.Model):
     GMC_sd_dump = models.IntegerField()
     GPS_Time_State_Vector = models.CharField(max_length=400)
     Fletcher_Code = models.IntegerField()
-    Time = models.DecimalField(max_digits=20, decimal_places=14)
+    Time = models.DecimalField(max_digits=40, decimal_places=14)
 
 class CommsPacket(models.Model):
     Filename = models.CharField(max_length=100)
@@ -97,7 +97,7 @@ class CommsPacket(models.Model):
     sd_dump = models.IntegerField()
     GPS_Time_State_Vector = models.CharField(max_length=400)
     Fletcher_Code = models.IntegerField()
-    Time = models.DecimalField(max_digits=20, decimal_places=14)
+    Time = models.DecimalField(max_digits=40, decimal_places=14)
 
 class TempPacket(models.Model):
     Filename = models.CharField(max_length=100)
@@ -121,7 +121,7 @@ class TempPacket(models.Model):
     sd_dump = models.IntegerField()
     GPS_Time_State_Vector = models.CharField(max_length=200)
     Fletcher_Code = models.IntegerField()
-    Time = models.DecimalField(max_digits=20, decimal_places=14)
+    Time = models.DecimalField(max_digits=40, decimal_places=14)
 
 class InitPacket(models.Model):
     Filename = models.CharField(max_length=100)
@@ -140,5 +140,5 @@ class InitPacket(models.Model):
     config = models.CharField(max_length=200)
     GPS_Time_State_Vector = models.CharField(max_length=400)
     Fletcher_Code = models.IntegerField()
-    Time = models.DecimalField(max_digits=30, decimal_places=14)
+    Time = models.DecimalField(max_digits=40, decimal_places=14)
 
