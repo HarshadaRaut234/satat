@@ -1,10 +1,9 @@
-import json
 import requests
 from django.http import JsonResponse
 from .models import Satellite
 from skyfield.api import load, EarthSatellite, utc
 from datetime import datetime, timedelta
-
+from django.utils import timezone
 
 def get_satellite_position(request, satellite_id):
     try:
@@ -53,9 +52,6 @@ def get_groundstation_position(request):
         'lat': 8.6265,
         'long': 77.0338
     })
-
-from datetime import timedelta
-from django.utils import timezone
 
 def update_tle(satellite_id):
     # Check if the satellite's TLE is already in the database
