@@ -9,8 +9,9 @@ import time
 from datetime import datetime
 
 def unix(date, time):
+    # Combine the date and time inputs in the correct order
     combined_input = f"{date} {time}:00"  # Add seconds as ":00"
-        
+    
     # Parse the combined string to a datetime object
     dt = datetime.strptime(combined_input, "%Y-%m-%d %H:%M:%S")
     
@@ -27,7 +28,7 @@ def input(request):
         file = request.FILES['binary_input_file']
         start_time = request.POST['start_time']
         start_date = request.POST['start_date']
-        time = unix(start_time.str(), start_date.str())
+        unix_time = unix(start_date, start_time)
 
         # Create a unique task ID for tracking progress
         task_id = str(time.time()).replace('.', '')
@@ -36,7 +37,7 @@ def input(request):
         cache.set(f"progress_{task_id}", 0)
 
         # Run the decoder in a background thread
-        threading.Thread(target=ccsds_decoder, args=(file, task_id, time)).start()
+        threading.Thread(target=ccsds_decoder, args=(file, task_id, unix_time)).start()
 
         # Return the task ID to the client for tracking
         return HttpResponse(f"""
