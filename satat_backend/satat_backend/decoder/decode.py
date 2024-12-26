@@ -255,7 +255,7 @@ def packetiser(data_df, report_df):
 def summarize_data(data_df):
     index0x08 = data_df.where(data_df==0x08).dropna().index
     #print(index0x08)
-    index0x08 = index0x08[:-1] #to elimate last packet which maybe incompleted
+    index0x08 = index0x08[1:-2] #to elimate last packet which maybe incompleted
     valid_lengths_indexes = index0x08.where(data_df[index0x08+5].isin(valid_lengths)).dropna()
     valid_apids_indexes = index0x08.where(data_df[index0x08+1].isin(valid_apids)).dropna()
     valid_indexes = valid_apids_indexes.intersection(valid_lengths_indexes)
@@ -284,16 +284,27 @@ def differential(series):
         prev = i['GMC_Radiation_Counts']
     return series
 
+def load_data(filename):
+    data_df = pd.read_csv(filename, header=9, delimiter='\t', usecols=[f'CH-{3}']).drop(0).reset_index(drop=True)
+    data_df=data_df.dropna()
+    data_df = data_df[f'CH-{3}'].apply(lambda x: int(str(x)[0:4], 16))
+    return data_df
+
 @shared_task
-def ccsds_decoder(file, task_id, time):
+def ccsds_decoder(file, task_id, time, data_df, txt):
     file_data = file.read()
     file_name = file.name
     print("File input taken")
     
     # Convert file data into appropriate format
-    byte_data = np.frombuffer(file_data, dtype=np.uint8)
-    data_df = pd.Series(byte_data).iloc[::2].reset_index(drop=True)
+    if txt == 'bytes' or txt == 'packets':
+        print('inside false')
+        byte_data = np.frombuffer(file_data, dtype=np.uint8)
+        data_df = pd.Series(byte_data).iloc[::2].reset_index(drop=True)
+        print(data_df)
+    
     summary_df = summarize_data(data_df)
+    print(summary_df)
 
     # Initialize an empty series for decoded values
     decoded_values_series = pd.Series()  # Empty series to store decoded values

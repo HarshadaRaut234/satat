@@ -11,7 +11,7 @@ class HkAdmin(admin.ModelAdmin):
     Formatted_Time.short_description = 'Formatted_Time'
 
 class GmcAdmin(admin.ModelAdmin):
-    list_display = ('Formatted_Time','Filename', 'GMC_Radiation_Counts', 'GMC_Radiation_Counts_Differential','GM_Tube_High_Voltage', 'HVDC_IC_Control_Voltage')
+    list_display = ('Formatted_Time','Filename', 'GMC_Radiation_Counts', 'GMC_Radiation_Counts_Differential','GM_Tube_High_Voltage', 'HVDC_IC_Control_Voltage', 'Comparator_Reference_Voltage')
     search_fields = ('Filename',)
 
     def Formatted_Time(self, obj):
