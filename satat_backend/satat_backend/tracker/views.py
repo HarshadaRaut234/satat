@@ -1,9 +1,10 @@
 import requests
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .models import Satellite
 from skyfield.api import load, EarthSatellite, utc
 from datetime import datetime, timedelta
 from django.utils import timezone
+from bs4 import BeautifulSoup
 
 def get_satellite_position(request, satellite_id):
     try:
@@ -94,3 +95,41 @@ def fetch_and_store_tle(satellite_id):
     )
 
     return satellite
+
+def cme(request):
+    response = requests.get('https://sidc.be/cactus/out/latestCMEs.html')
+    response.raise_for_status()  # Raise an error for HTTP codes 4xx/5xx
+    
+    # Parsing the HTML content with BeautifulSoup
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Printing the prettified HTML (for readability)
+    # print(soup.prettify())
+
+    pre_blocks = soup.find_all('pre')
+    if len(pre_blocks) < 2:
+        return JsonResponse({'error': 'CME data table not found'}, status=404)
+    
+    issued_text = soup.find('body').text
+    issued_time = None
+    for line in issued_text.splitlines():
+        if 'issued' in line.lower():
+            issued_time = line.strip()
+            break
+    
+    table_content = pre_blocks[1].text.splitlines()  # Get rows as lines
+    headers = table_content[1] if len(table_content) > 0 else None # The first line is the header
+    rows = table_content[2:]
+
+    filtered_rows = []
+    for row in rows:
+        if " II" in row or " III" in row or " IV" in row:  # Check for halo markers
+            filtered_rows.append(row.strip())
+
+    # Return the filtered rows as JSON response
+    return JsonResponse({
+        'issued_time': issued_time,
+        'headers': headers.strip(),
+        'filtered_rows': filtered_rows
+    })
+   
