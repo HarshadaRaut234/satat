@@ -3,16 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input file</title>
+    <title>Input File Form</title>
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <form enctype="multipart/form-data" action="submit/" method="POST">
-        {% csrf_token %}
-        upload your file here: <br>
-        <input type="file" name="binary_input_file" id="binary-input-file">
-        <input type="date" name="start_date" id="start_date">
-        <input type="time" name="start_time" id="start_time">
-        <input type="submit" value="submit-here">
-    </form>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h4>File Upload Form</h4>
+                    </div>
+                    <div class="card-body">
+                        <form enctype="multipart/form-data" action="submit/" method="POST">
+                            {% csrf_token %}
+                            
+                            <!-- File Upload -->
+                            <div class="mb-3">
+                                <label for="binary-input-file" class="form-label">Upload your file here:</label>
+                                <input type="file" class="form-control" name="binary_input_file" id="binary-input-file" required>
+                            </div>
+
+                            <!-- Date and Time -->
+                            <div class="mb-3">
+                                <label for="start_date" class="form-label">Select Start Date:</label>
+                                <input type="date" class="form-control" name="start_date" id="start_date" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Select Start Time:</label>
+                                <input type="time" class="form-control" name="start_time" id="start_time" required>
+                            </div>
+
+                            <!-- File Type Radio Options -->
+                            <div class="mb-3">
+                                <p class="form-label">Select File Type:</p>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" name="filetype" id="bytes" value="bytes">
+                                    <label for="bytes" class="form-check-label">
+                                        Check this if the file is in .out extension
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" name="filetype" id="txt" value="txt">
+                                    <label for="txt" class="form-check-label">
+                                        Check this if the txt file is in channels
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" name="filetype" id="packets" value="packets">
+                                    <label for="packets" class="form-check-label">
+                                        Check this if the packet size is greater than the actual size
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Submit Here</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS CDN (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

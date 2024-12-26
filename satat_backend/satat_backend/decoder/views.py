@@ -36,7 +36,17 @@ def input(request):
 
         start_time = request.POST['start_time']
         start_date = request.POST['start_date']
+        filetype = request.POST['filetype']
+        print(filetype)
         unix_time = unix(start_date, start_time)
+
+        data_df = None
+
+        if filetype == 'txt':
+            print('inside true')
+            data_df = pd.read_csv(file, header=9, delimiter='\t', usecols=[f'CH-{3}']).drop(0).reset_index(drop=True)
+            data_df=data_df.dropna()
+            data_df = data_df[f'CH-{3}'].apply(lambda x: int(str(x)[0:4], 16))
 
         if file_extension in allowed_extensions:
             # Create a unique task ID for tracking progress
@@ -46,7 +56,7 @@ def input(request):
             cache.set(f"progress_{task_id}", 0)
 
             # Run the decoder in a background thread
-            threading.Thread(target=ccsds_decoder, args=(file, task_id, unix_time)).start()
+            threading.Thread(target=ccsds_decoder, args=(file, task_id, unix_time, data_df, filetype)).start()
 
             # Return the task ID to the client for tracking
             return HttpResponse(f"""
